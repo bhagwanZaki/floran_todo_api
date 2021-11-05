@@ -1,0 +1,1 @@
+web: gunicorn dj_react_todo.wsgi --log-file -
