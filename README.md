@@ -6,7 +6,15 @@
 ## Intoduction 
 
 Floran todo is todo app that will help you to manage your daily tasks and give you a graphical representation of task completed every day.
-<br> This app uses React for it frontend and Django Rest API for backend purposes. Currently the SQLite is used as the database but once the app is ready to deploy database will be shifted to PostgreSQl
+<br> 
+<b>Stack used for this application</b>
+<ul>
+    <li>Frontend : React
+    <li> Backend api : Django rest framework
+    <li> Mobile App : Flutter
+    <li>Database : PostgresSql 
+</ul>
+
 
 ## Feature Available 
 
