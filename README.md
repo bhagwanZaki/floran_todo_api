@@ -1,4 +1,4 @@
-# Floran Todo ReactDj App
+# Floran Todo.
 <p align="center" width="100%">
     <img src="https://github.com/bhagwanZaki/react-dj-todo/blob/main/assests/logo.png"> 
 </p>
@@ -38,7 +38,7 @@ Floran todo is todo app that will help you to manage your daily tasks and give y
 ## Requirement 
 
 Python v.3.8+
-<br>Node.JS 
+<br>Node.JS <br>Flutter v.2.2.1
 
 
   
