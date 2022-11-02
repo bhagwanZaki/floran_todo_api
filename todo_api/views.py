@@ -1,12 +1,13 @@
 from todo_api.models import Todo
 from todo_api.serializers import testSerializer, todoSerializer
-from rest_framework import viewsets,permissions
+from rest_framework import viewsets,permissions,status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from datetime import date as dt
 from django.contrib.auth.models import User
+from django.db.models import Min
 import calendar
-# Create your views here.
+
 class TodoViewSet(viewsets.ModelViewSet):
 
     serializer_class = todoSerializer
@@ -24,21 +25,45 @@ class TodoViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-class test(viewsets.ModelViewSet):
-    
-    queryset = Todo.objects.all()
-    serializer_class = testSerializer
-    permission_classes= [
-        permissions.AllowAny
-    ]
+class TodoAPI(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self,request,date=None):
+        try:
+            print(date)
+            try:
+                year, month, day = map(int, date.split("-"))
+                appointmentDateSelected = dt(year=year, month=month, day=day)
+            except Exception as e:
+                print(e)
+                return Response({"error": "Invalid Date, Please Provide Valid Date in Format of YYYY-MM-DD"},status=status.HTTP_400_BAD_REQUEST)
 
+            # getting minimum date of incomplete task
+            minDate = Todo.objects.filter(owner=request.user,completed=False).aggregate(Min('date_completed_by')) 
+
+            # filtering uncompleted task
+            uncompleted = Todo.objects.filter(owner=request.user,completed=False,date_completed_by__range=[minDate['date_completed_by__min'],dt.today()]).order_by('date_completed_by') 
+            uncompletedSerial  = todoSerializer(uncompleted,many=True)
+            
+            futureTodos = []
+            if dt.today() < appointmentDateSelected:
+                # task of given date
+                todos = Todo.objects.filter(owner=request.user,date_completed_by=appointmentDateSelected)
+                todosSerial = todoSerializer(todos,many=True)
+                futureTodos = todosSerial.data[::-1]
+            
+            context = {
+                'todo' : uncompletedSerial.data + futureTodos,
+            }
+
+            return Response(context,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error':e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ChartData(APIView):
     
     def get(self, request,*args, **kwargs):
-        id = request.query_params['id']
-        userData = User.objects.get(id=int(id))
+        userData = User.objects.get(id=self.request.user.id)
         todoData = Todo.objects.filter(owner=userData)
         data = []
         label = []
@@ -57,24 +82,28 @@ class ChartData(APIView):
 
 class FlutterChartData(APIView):
     def get(self, request,*args, **kwargs):
-        id = request.query_params['id']
-        userData = User.objects.get(id=id)
-        todoData = Todo.objects.filter(owner=userData)
-        data = []
+        
+        try:
+            userData = User.objects.get(id=self.request.user.id)
+            todoData = Todo.objects.filter(owner=userData, completed = True)
+            data = []
+            taskDone = 0
+            days_list = [i for i in range(1,dt.today().day+1)]
+            print(dt.today())
+            if todoData:
+                for i in days_list:
+                    tp = todoData.filter(completed_at__year=dt.today().year,completed_at__month=dt.today().month,completed_at__day=i).count()
+                    data.append(
+                        tp
+                    )
+                    taskDone += tp
 
-        if todoData:
-            todo_date =todoData.filter(completed = True)
-            days_list = [i for i in range(1,calendar.monthrange(dt.today().year,dt.today().month)[1]+1)]
-            for i in days_list:
-                temp = {
-                    "data" : todo_date.filter(completed_at__year=dt.today().year,completed_at__month=dt.today().month,completed_at__day=i).count(),
-                    "date" : i 
-                }
-                data.append(temp)
-        else:
-            data.append({
-                "data":0,
-                "date":dt.today().day
-            })   
-      
-        return Response({"data":data})
+            res = {
+                "cdate": days_list,
+                "cdata":data,
+                "numberOfTaskDone": taskDone
+            }
+        
+            return Response(res,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error':e},status=status.HTTP_500_INTERNAL_SERVER_ERROR)

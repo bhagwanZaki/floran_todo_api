@@ -1,3 +1,4 @@
+from email.policy import default
 from django.contrib.auth.models import User
 from django.db import models
 from datetime import date as dt
@@ -10,6 +11,7 @@ class Todo(models.Model):
     completed = models.BooleanField(default=False)
     date_completed_by = models.DateField(default=timezone.now)
     completed_at= models.DateField(null=True)
+    description = models.TextField(default='Description',blank=True)
     owner=models.ForeignKey(User,related_name="todos",on_delete=models.CASCADE,null=True)
 
     def __str__(self):
