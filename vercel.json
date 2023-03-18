@@ -25,7 +25,7 @@
       },
       {
         "src": "/(.*)",
-        "dest": "algorithm_backend/wsgi.py"
+        "dest": "dj_react_todo/wsgi.py"
       }
     ],
     "regions": ["bom1"]
