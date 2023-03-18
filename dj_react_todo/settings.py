@@ -13,7 +13,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*','127.0.0.1','715aeba9bf73.ngrok.io','10.0.2.2']
+ALLOWED_HOSTS = ['*','127.0.0.1','https://floran-todo-api.vercel.app/','10.0.2.2']
 CORS_ORIGIN_ALLOW_ALL=True
 
 
