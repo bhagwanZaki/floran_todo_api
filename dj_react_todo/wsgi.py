@@ -13,7 +13,7 @@ import pathlib
 
 from django.core.wsgi import get_wsgi_application
 
-debug = False
+debug = True
 
 if debug:
     CURRENT_DIR = pathlib.Path(__file__).resolve().parent

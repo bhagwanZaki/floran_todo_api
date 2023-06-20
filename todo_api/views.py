@@ -4,6 +4,7 @@ from rest_framework import viewsets,permissions,status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from datetime import date as dt
+from datetime import timedelta
 from django.contrib.auth.models import User
 from django.db.models import Min
 import calendar
@@ -16,7 +17,6 @@ class TodoViewSet(viewsets.ModelViewSet):
     ]
 
     def update(self, request, *args, **kwargs):
-        print(request.data)
         return super().update(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -30,30 +30,40 @@ class TodoAPI(APIView):
 
     def get(self,request,date=None):
         try:
-            print(date)
             try:
                 year, month, day = map(int, date.split("-"))
                 appointmentDateSelected = dt(year=year, month=month, day=day)
             except Exception as e:
-                print(e)
                 return Response({"error": "Invalid Date, Please Provide Valid Date in Format of YYYY-MM-DD"},status=status.HTTP_400_BAD_REQUEST)
-
-            # getting minimum date of incomplete task
-            minDate = Todo.objects.filter(owner=request.user,completed=False).aggregate(Min('date_completed_by')) 
-
-            # filtering uncompleted task
-            uncompleted = Todo.objects.filter(owner=request.user,completed=False,date_completed_by__range=[minDate['date_completed_by__min'],dt.today()]).order_by('date_completed_by') 
-            uncompletedSerial  = todoSerializer(uncompleted,many=True)
             
-            futureTodos = []
-            if dt.today() < appointmentDateSelected:
-                # task of given date
-                todos = Todo.objects.filter(owner=request.user,date_completed_by=appointmentDateSelected)
-                todosSerial = todoSerializer(todos,many=True)
-                futureTodos = todosSerial.data[::-1]
+            # Getting delayed data
+            yesterdayDate = dt.today() - timedelta(days=1)
+            delayedData = Todo.objects.filter(owner=request.user,completed=False,date_completed_by__lte=yesterdayDate).values()[::-1]
+
+            # Getting appointedDateData
+
+            givenData = []
+            if appointmentDateSelected >= dt.today():
+                givenDateData = Todo.objects.filter(owner=request.user,completed=False,date_completed_by=appointmentDateSelected).values()
+                if givenDateData.exists():
+                    givenData = list(givenDateData)
+            # # getting minimum date of incomplete task
+            # minDate = Todo.objects.filter(owner=request.user,completed=False).aggregate(Min('date_completed_by')) 
+
+            # # filtering uncompleted task
+            # uncompleted = Todo.objects.filter(owner=request.user,completed=False,date_completed_by__range=[minDate['date_completed_by__min'],dt.today()]).order_by('date_completed_by') 
+            # uncompletedSerial  = todoSerializer(uncompleted,many=True)
             
+            # futureTodos = []
+            # if dt.today() < appointmentDateSelected:
+            #     # task of given date
+            #     todos = Todo.objects.filter(owner=request.user,date_completed_by=appointmentDateSelected)
+            #     todosSerial = todoSerializer(todos,many=True)
+            #     futureTodos = todosSerial.data[::-1]
+            data = delayedData + givenData
             context = {
-                'todo' : uncompletedSerial.data + futureTodos,
+                # 'todo' : Todo.objects.filter(owner=request.user,completed=False,date_completed_by__lte=appointmentDateSelected).values(),
+                'todo' :data,
             }
 
             return Response(context,status=status.HTTP_200_OK)
@@ -70,7 +80,6 @@ class ChartData(APIView):
 
         if todoData:
             todo_date =todoData.filter(completed = True)
-            print(todo_date)
 
             days_list = [i for i in range(1,calendar.monthrange(dt.today().year,dt.today().month)[1]+1)]
             for i in range(1,dt.today().day+1):
@@ -89,7 +98,6 @@ class FlutterChartData(APIView):
             data = []
             taskDone = 0
             days_list = [i for i in range(1,dt.today().day+1)]
-            print(dt.today())
             if todoData:
                 for i in days_list:
                     tp = todoData.filter(completed_at__year=dt.today().year,completed_at__month=dt.today().month,completed_at__day=i).count()

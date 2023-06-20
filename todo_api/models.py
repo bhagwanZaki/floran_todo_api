@@ -10,7 +10,7 @@ class Todo(models.Model):
     date_created = models.DateField(auto_now_add=True)
     completed = models.BooleanField(default=False)
     date_completed_by = models.DateField(default=timezone.now)
-    completed_at= models.DateField(null=True)
+    completed_at= models.DateField(blank=True,null=True)
     description = models.TextField(default='Description',blank=True)
     owner=models.ForeignKey(User,related_name="todos",on_delete=models.CASCADE,null=True)
 
